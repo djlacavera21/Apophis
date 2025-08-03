@@ -25,14 +25,16 @@ def run_malbolge(code: str) -> str:
     return malbolge.eval(code)
 
 
-def apophis_malbolge(path: Path | str = "malbolge.mal") -> str:
-    """Execute a Malbolge program stored in *path*.
+def apophis_malbolge(path: Path | str = "malbolge.apop") -> str:
+    """Execute an Apophis program stored in *path*.
 
-    By default, the file ``malbolge.mal`` in the current working directory
-    is loaded and executed.  The output of the program is returned as a
-    string.
+    Apophis source files must end in ``.apop`` or ``.apo``.  By default, the
+    file ``malbolge.apop`` in the current working directory is loaded and
+    executed.  The output of the program is returned as a string.
     """
     file_path = Path(path)
+    if file_path.suffix not in {".apop", ".apo"}:
+        raise ValueError("Apophis files must use the .apop or .apo extension")
     code = file_path.read_text(encoding="utf-8")
     return run_malbolge(code)
 
@@ -52,3 +54,24 @@ def malbolge_encode(text: str) -> str:
         else:
             encoded_chars.append(ch)
     return "".join(encoded_chars)
+
+
+def main() -> None:
+    """Command-line entry point for executing Apophis programs."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Execute an Apophis program")
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default="malbolge.apop",
+        help="Path to a .apop/.apo source file",
+    )
+    args = parser.parse_args()
+    output = apophis_malbolge(args.path)
+    if output:
+        print(output)
+
+
+if __name__ == "__main__":  # pragma: no cover - CLI utility
+    main()

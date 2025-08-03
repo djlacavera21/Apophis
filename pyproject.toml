@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apophis"
+version = "0.1.0"
+description = "Apophis language utilities combining Python and Malbolge"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{name = "Apophis Developers"}]
+license = {file = "LICENSE"}
+dependencies = ["malbolge"]
+
+[project.scripts]
+apophis = "apophis:main"
+
+[tool.setuptools]
+py-modules = ["apophis"]

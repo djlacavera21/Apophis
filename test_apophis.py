@@ -18,3 +18,9 @@ def test_malbolge_encode():
 
 def test_apophis_malbolge():
     assert apophis.apophis_malbolge() == ''
+
+
+def test_apophis_malbolge_with_apo(tmp_path):
+    file = tmp_path / "sample.apo"
+    file.write_text("Q")
+    assert apophis.apophis_malbolge(file) == ''
