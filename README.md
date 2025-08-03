@@ -71,3 +71,16 @@ so programs can be executed directly:
 ```bash
 apophis path/to/program.apo
 ```
+
+An interactive REPL is also available for quick experiments:
+
+```python
+import apophis
+apophis.repl()
+```
+
+or from the command line:
+
+```bash
+apophis -i
+```
