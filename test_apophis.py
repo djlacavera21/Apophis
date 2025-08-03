@@ -17,21 +17,32 @@ def test_malbolge_encode():
     assert encoded == expected
 
 
-def test_apophis_malbolge():
-    assert apophis.apophis_malbolge() == ''
+def test_run_file_default():
+    assert apophis.run_file() == ''
 
 
-def test_apophis_malbolge_with_apo(tmp_path):
+def test_run_file_with_apo(tmp_path):
     file = tmp_path / "sample.apo"
     file.write_text("Q")
-    assert apophis.apophis_malbolge(file) == ''
+    assert apophis.run_file(file) == ''
 
 
-def test_run_apophis_basic():
+def test_run_python_basic():
     code = "x = 1\nprint(x + 2)"
-    assert apophis.run_apophis(code) == "3\n"
+    assert apophis.run_python(code) == "3\n"
 
 
-def test_run_apophis_rejects_import():
+def test_run_python_rejects_import():
     with pytest.raises(ValueError):
-        apophis.run_apophis("import os")
+        apophis.run_python("import os")
+
+
+def test_run_apophis_mixed_string():
+    code = ":print('A', end='')\n>b\n:print('B', end='')"
+    assert apophis.run_apophis(code) == "AsB"
+
+
+def test_run_apophis_mixed_file(tmp_path):
+    file = tmp_path / "hybrid.apop"
+    file.write_text(":print('hi', end='')\n>b\n")
+    assert apophis.run_file(file) == "his"

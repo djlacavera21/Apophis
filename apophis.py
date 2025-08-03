@@ -28,7 +28,7 @@ def run_malbolge(code: str) -> str:
     return malbolge.eval(code)
 
 
-def apophis_malbolge(path: Path | str = "malbolge.apop") -> str:
+def run_file(path: Path | str = "malbolge.apop") -> str:
     """Execute an Apophis program stored in *path*.
 
     Apophis source files must end in ``.apop`` or ``.apo``.  By default, the
@@ -39,7 +39,11 @@ def apophis_malbolge(path: Path | str = "malbolge.apop") -> str:
     if file_path.suffix not in {".apop", ".apo"}:
         raise ValueError("Apophis files must use the .apop or .apo extension")
     code = file_path.read_text(encoding="utf-8")
-    return run_malbolge(code)
+    return run_apophis(code)
+
+
+# Backwards compatibility for earlier versions
+apophis_malbolge = run_file
 
 
 def malbolge_encode(text: str) -> str:
@@ -59,14 +63,9 @@ def malbolge_encode(text: str) -> str:
     return "".join(encoded_chars)
 
 
-def run_apophis(code: str) -> str:
-    """Execute *code* written in the Apophis language.
+def run_python(code: str) -> str:
+    """Execute *code* using the restricted Apophis Python subset."""
 
-    The Apophis language is currently a tiny, safe subset of Python that
-    supports variable assignment, arithmetic expressions and ``print``
-    function calls.  The output produced by ``print`` is returned as a
-    string.
-    """
     if not isinstance(code, str):
         raise TypeError("code must be a string")
 
@@ -79,6 +78,7 @@ def run_apophis(code: str) -> str:
         ast.Name,
         ast.Load,
         ast.Store,
+        ast.keyword,
         ast.Constant,
         ast.BinOp,
         ast.Add,
@@ -100,6 +100,49 @@ def run_apophis(code: str) -> str:
     return buf.getvalue()
 
 
+def run_apophis(code: str) -> str:
+    """Execute mixed Apophis *code* containing Python and Malbolge segments.
+
+    Lines starting with ``:`` are treated as Python and evaluated using
+    :func:`run_python`.  Other lines are considered Malbolge and executed via
+    :func:`run_malbolge`.  Output from both languages is concatenated and
+    returned as a single string.
+    """
+
+    if not isinstance(code, str):
+        raise TypeError("code must be a string")
+
+    segments: list[tuple[str, str]] = []
+    current_type: str | None = None
+    buffer: list[str] = []
+    for raw_line in code.splitlines():
+        if raw_line.startswith(":"):
+            seg_type = "py"
+            line = raw_line[1:]
+        else:
+            seg_type = "mb"
+            line = raw_line
+        if current_type is None:
+            current_type = seg_type
+        if seg_type != current_type:
+            segments.append((current_type, "\n".join(buffer)))
+            buffer = []
+            current_type = seg_type
+        buffer.append(line)
+    if buffer:
+        segments.append((current_type, "\n".join(buffer)))
+
+    outputs: list[str] = []
+    for seg_type, seg_code in segments:
+        if not seg_code.strip():
+            continue
+        if seg_type == "py":
+            outputs.append(run_python(seg_code))
+        else:
+            outputs.append(run_malbolge(seg_code))
+    return "".join(outputs)
+
+
 def main() -> None:
     """Command-line entry point for executing Apophis programs."""
     import argparse
@@ -112,7 +155,7 @@ def main() -> None:
         help="Path to a .apop/.apo source file",
     )
     args = parser.parse_args()
-    output = apophis_malbolge(args.path)
+    output = run_file(args.path)
     if output:
         print(output)
 
