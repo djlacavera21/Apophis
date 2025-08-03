@@ -12,6 +12,7 @@ from pathlib import Path
 import ast
 import contextlib
 import io
+import json
 import subprocess
 
 import malbolge
@@ -42,7 +43,7 @@ def run_file(
     path:
         Location of the source file.
     py_env:
-        Optional dictionary used to persist state between Python segments.
+        Optional dictionary used to persist state between Python and Ruby segments.
     """
     file_path = Path(path)
     if file_path.suffix not in {".apop", ".apo"}:
@@ -72,16 +73,42 @@ def malbolge_encode(text: str) -> str:
     return "".join(encoded_chars)
 
 
-def run_ruby(code: str) -> str:
-    """Execute *code* written in Ruby and return its output."""
+def run_ruby(code: str, env: dict[str, object] | None = None) -> str:
+    """Execute *code* written in Ruby and return its output.
+
+    If *env* is provided, it must contain JSON-serialisable values.  Variables
+    from the mapping are injected into the Ruby interpreter before *code*
+    executes.  After execution, any Ruby variables are written back to ``env`` to
+    allow rudimentary state sharing with Python segments.
+    """
     if not isinstance(code, str):
         raise TypeError("code must be a string")
+
+    preamble = ""
+    postamble = ""
+    if env is not None:
+        assignments = [f"{name} = {json.dumps(value)}" for name, value in env.items()]
+        preamble = "require 'json'\n" + "\n".join(assignments) + "\n"
+        postamble = (
+            "\n__apophis_env__ = {}\n"
+            "(local_variables - [:__apophis_env__]).each do |v|\n"
+            "  __apophis_env__[v] = eval(v.to_s)\n"
+            "end\n"
+            "STDERR.write(JSON.dump(__apophis_env__))\n"
+        )
+
+    full_code = preamble + code + postamble
     proc = subprocess.run(
-        ["ruby", "-e", code],
+        ["ruby", "-e", full_code],
         check=True,
         text=True,
         capture_output=True,
     )
+    if env is not None:
+        try:
+            env.update(json.loads(proc.stderr or "{}"))
+        except json.JSONDecodeError:
+            pass
     return proc.stdout
 
 
@@ -89,8 +116,8 @@ def _ruby_to_python(code: str) -> str:
     """Translate a tiny Ruby-like syntax subset into valid Python code.
 
     This helper allows ``run_python`` to accept blocks written using Ruby's
-    ``end`` keyword and missing colons after ``if``/``while`` statements.  The
-    transformation is intentionally minimal and does not aim to be a full
+    ``end`` keyword and missing colons after ``if``/``while``/``def`` statements.
+    The transformation is intentionally minimal and does not aim to be a full
     Ruby-to-Python converter.
     """
 
@@ -100,7 +127,7 @@ def _ruby_to_python(code: str) -> str:
         if stripped == "end":
             continue
         first_word = stripped.split(" ", 1)[0] if stripped else ""
-        if first_word in {"if", "while", "elif", "else"} and not stripped.endswith(":"):
+        if first_word in {"if", "while", "elif", "else", "def"} and not stripped.endswith(":"):
             line = line.rstrip() + ":"
         lines.append(line)
     return "\n".join(lines)
@@ -110,10 +137,11 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
     """Execute *code* using the restricted Apophis Python subset.
 
     This subset supports variable assignments, ``print`` calls, arithmetic
-    expressions, ``if`` statements and ``while`` loops.  A minimal Ruby-like
-    syntax is also recognised: ``if``/``while`` blocks may omit the trailing
-    colon and be terminated with ``end``.  Only a curated selection of Python's
-    AST nodes is permitted to keep the interpreter intentionally small and safe.
+    expressions, ``if`` statements, ``while`` loops and function definitions.  A
+    minimal Ruby-like syntax is also recognised: ``if``/``while``/``def`` blocks
+    may omit the trailing colon and be terminated with ``end``.  Only a curated
+    selection of Python's AST nodes is permitted to keep the interpreter
+    intentionally small and safe.
 
     Parameters
     ----------
@@ -147,6 +175,10 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
         ast.Mod,
         ast.If,
         ast.While,
+        ast.FunctionDef,
+        ast.arguments,
+        ast.arg,
+        ast.Return,
         ast.Compare,
         ast.Eq,
         ast.NotEq,
@@ -187,7 +219,7 @@ def run_apophis(code: str, py_env: dict[str, object] | None = None) -> str:
         (prefixed with ``;``) and Malbolge lines.  Blank lines and those
         starting with ``#`` are treated as comments and ignored.
     py_env:
-        Optional environment dictionary shared by all Python segments.
+        Optional environment dictionary shared by Python and Ruby segments.
     """
 
     if not isinstance(code, str):
@@ -229,7 +261,7 @@ def run_apophis(code: str, py_env: dict[str, object] | None = None) -> str:
         if seg_type == "py":
             outputs.append(run_python(seg_code, env=py_env))
         elif seg_type == "rb":
-            outputs.append(run_ruby(seg_code))
+            outputs.append(run_ruby(seg_code, env=py_env))
         else:
             outputs.append(run_malbolge(seg_code))
     return "".join(outputs)
