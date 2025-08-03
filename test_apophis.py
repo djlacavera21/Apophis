@@ -1,5 +1,6 @@
 import apophis
 import malbolge
+import pytest
 
 
 def test_run_malbolge_trivial():
@@ -24,3 +25,13 @@ def test_apophis_malbolge_with_apo(tmp_path):
     file = tmp_path / "sample.apo"
     file.write_text("Q")
     assert apophis.apophis_malbolge(file) == ''
+
+
+def test_run_apophis_basic():
+    code = "x = 1\nprint(x + 2)"
+    assert apophis.run_apophis(code) == "3\n"
+
+
+def test_run_apophis_rejects_import():
+    with pytest.raises(ValueError):
+        apophis.run_apophis("import os")

@@ -7,7 +7,10 @@ apply Malbolge's instruction encryption algorithm.  It relies on the
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable
+
+import ast
+import contextlib
+import io
 
 import malbolge
 
@@ -54,6 +57,47 @@ def malbolge_encode(text: str) -> str:
         else:
             encoded_chars.append(ch)
     return "".join(encoded_chars)
+
+
+def run_apophis(code: str) -> str:
+    """Execute *code* written in the Apophis language.
+
+    The Apophis language is currently a tiny, safe subset of Python that
+    supports variable assignment, arithmetic expressions and ``print``
+    function calls.  The output produced by ``print`` is returned as a
+    string.
+    """
+    if not isinstance(code, str):
+        raise TypeError("code must be a string")
+
+    tree = ast.parse(code, mode="exec")
+    allowed_nodes = (
+        ast.Module,
+        ast.Assign,
+        ast.Expr,
+        ast.Call,
+        ast.Name,
+        ast.Load,
+        ast.Store,
+        ast.Constant,
+        ast.BinOp,
+        ast.Add,
+        ast.Sub,
+        ast.Mult,
+        ast.Div,
+        ast.Pow,
+        ast.Mod,
+    )
+    for node in ast.walk(tree):
+        if not isinstance(node, allowed_nodes):
+            raise ValueError(f"Unsupported syntax: {type(node).__name__}")
+
+    env: dict[str, object] = {}
+    buf = io.StringIO()
+    globals_dict = {"__builtins__": {"print": print}}
+    with contextlib.redirect_stdout(buf):
+        exec(compile(tree, "<apophis>", "exec"), globals_dict, env)
+    return buf.getvalue()
 
 
 def main() -> None:

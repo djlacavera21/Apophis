@@ -14,6 +14,18 @@ will execute a program stored in a file using the Apophis file extensions
 Apophis also includes a `malbolge_encode(string)` function that encodes a given
 string into Malbolge code using the language's encryption algorithm.
 
+An experimental interpreter for the Apophis language itself is available via
+`run_apophis(code)`.  The interpreter understands a safe subset of Python,
+allowing variable assignments, arithmetic expressions and `print` calls.  The
+output of the program is returned as a string:
+
+```python
+import apophis
+
+result = apophis.run_apophis("x = 2\nprint(x + 1)")
+assert result == "3\n"
+```
+
 Overall, Apophis blends the syntax and capabilities of both Python and
 Malbolge, allowing for the use of traditional programming concepts alongside
 the challenge and obscurity of Malbolge's encryption algorithm.
