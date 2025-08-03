@@ -46,6 +46,11 @@ def test_run_python_if_statement():
     assert apophis.run_python(code) == "yes\n"
 
 
+def test_run_python_ruby_style_block():
+    code = "x = 1\nif x == 1\n    puts('ok')\nend"
+    assert apophis.run_python(code) == "ok\n"
+
+
 def test_run_python_while_loop():
     code = (
         "x = 0\n" "while x < 3:\n" "    print(x)\n" "    x = x + 1"
