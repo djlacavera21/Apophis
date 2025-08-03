@@ -111,6 +111,32 @@ def test_run_python_ruby_style_function():
     assert apophis.run_python(code) == "5\n"
 
 
+def test_run_python_ruby_style_elsif():
+    code = (
+        "x = 2\n"
+        "if x == 1\n"
+        "    puts('one')\n"
+        "elsif x == 2\n"
+        "    puts('two')\n"
+        "end"
+    )
+    assert apophis.run_python(code) == "two\n"
+
+
+def test_run_python_ruby_style_unless_until():
+    code_unless = "x = 1\nunless x > 1\n    puts('ok')\nend"
+    assert apophis.run_python(code_unless) == "ok\n"
+
+    code_until = (
+        "x = 0\n"
+        "until x == 2\n"
+        "    puts(x)\n"
+        "    x = x + 1\n"
+        "end"
+    )
+    assert apophis.run_python(code_until) == "0\n1\n"
+
+
 def test_run_apophis_cross_language_env():
     code = ":x = 5\n;puts x\n;y = x + 1\n:print(y)"
     assert apophis.run_apophis(code) == "5\n6\n"
