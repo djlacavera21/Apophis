@@ -12,3 +12,16 @@ Additionally, Apophis has a built-in function called apophis_malbolge() that wil
 Apophis also includes a malbolge_encode(string) function that encodes a given string into Malbolge code using the Malbolge's encryption algorithm.
 
 Overall, Apophis blends the syntax and capabilities of both Python and Malbolge, allowing for the use of traditional programming concepts alongside the challenge and obscurity of Malbolge's encryption algorithm.
+
+## Usage
+
+The `apophis.py` module provides helpers for experimenting with Malbolge:
+
+```python
+import apophis
+
+output = apophis.run_malbolge('Q')  # execute code stored in a string
+encoded = apophis.malbolge_encode('Hello!')
+```
+
+Place a Malbolge program in `malbolge.mal` and call `apophis.apophis_malbolge()` to run it.
