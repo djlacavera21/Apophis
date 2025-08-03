@@ -127,6 +127,16 @@ def _ruby_to_python(code: str) -> str:
         if stripped == "end":
             continue
         first_word = stripped.split(" ", 1)[0] if stripped else ""
+        if first_word == "elsif":
+            line = line.replace("elsif", "elif", 1)
+            first_word = "elif"
+        elif first_word == "unless":
+            line = line.replace("unless", "if not", 1)
+            first_word = "if"
+        elif first_word == "until":
+            line = line.replace("until", "while not", 1)
+            first_word = "while"
+        stripped = line.strip()
         if first_word in {"if", "while", "elif", "else", "def"} and not stripped.endswith(":"):
             line = line.rstrip() + ":"
         lines.append(line)
@@ -139,9 +149,10 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
     This subset supports variable assignments, ``print`` calls, arithmetic
     expressions, ``if`` statements, ``while`` loops and function definitions.  A
     minimal Ruby-like syntax is also recognised: ``if``/``while``/``def`` blocks
-    may omit the trailing colon and be terminated with ``end``.  Only a curated
-    selection of Python's AST nodes is permitted to keep the interpreter
-    intentionally small and safe.
+    may omit the trailing colon and be terminated with ``end``; ``elsif``,
+    ``unless`` and ``until`` are accepted as aliases for ``elif``, ``if not`` and
+    ``while not`` respectively.  Only a curated selection of Python's AST nodes
+    is permitted to keep the interpreter intentionally small and safe.
 
     Parameters
     ----------
@@ -192,6 +203,7 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
         ast.UnaryOp,
         ast.UAdd,
         ast.USub,
+        ast.Not,
         ast.Break,
         ast.Continue,
         ast.Pass,
