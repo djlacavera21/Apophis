@@ -71,6 +71,11 @@ def malbolge_encode(text: str) -> str:
 def run_python(code: str, env: dict[str, object] | None = None) -> str:
     """Execute *code* using the restricted Apophis Python subset.
 
+    This subset supports variable assignments, ``print`` calls, arithmetic
+    expressions, ``if`` statements and ``while`` loops.  Only a curated
+    selection of Python's AST nodes is permitted to keep the interpreter
+    intentionally small and safe.
+
     Parameters
     ----------
     code:
@@ -100,6 +105,24 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
         ast.Div,
         ast.Pow,
         ast.Mod,
+        ast.If,
+        ast.While,
+        ast.Compare,
+        ast.Eq,
+        ast.NotEq,
+        ast.Lt,
+        ast.LtE,
+        ast.Gt,
+        ast.GtE,
+        ast.BoolOp,
+        ast.And,
+        ast.Or,
+        ast.UnaryOp,
+        ast.UAdd,
+        ast.USub,
+        ast.Break,
+        ast.Continue,
+        ast.Pass,
     )
     for node in ast.walk(tree):
         if not isinstance(node, allowed_nodes):

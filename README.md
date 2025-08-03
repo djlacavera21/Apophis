@@ -35,8 +35,9 @@ Apophis also includes a `malbolge_encode(string)` function that encodes a given
 string into Malbolge code using the language's encryption algorithm.
 
 An interpreter for a safe subset of Python is available via
-`run_python(code)`.  It allows variable assignments, arithmetic expressions and
-`print` calls.  The output of the program is returned as a string:
+`run_python(code)`.  It allows variable assignments, arithmetic expressions,
+basic control flow (``if`` statements and ``while`` loops) and ``print`` calls.
+The output of the program is returned as a string:
 
 ```python
 import apophis

@@ -37,6 +37,18 @@ def test_run_python_rejects_import():
         apophis.run_python("import os")
 
 
+def test_run_python_if_statement():
+    code = "x = 5\nif x > 3:\n    print('yes')"
+    assert apophis.run_python(code) == "yes\n"
+
+
+def test_run_python_while_loop():
+    code = (
+        "x = 0\n" "while x < 3:\n" "    print(x)\n" "    x = x + 1"
+    )
+    assert apophis.run_python(code) == "0\n1\n2\n"
+
+
 def test_run_apophis_mixed_string():
     code = ":print('A', end='')\n>b\n:print('B', end='')"
     assert apophis.run_apophis(code) == "AsB"
