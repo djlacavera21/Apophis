@@ -89,8 +89,8 @@ def _ruby_to_python(code: str) -> str:
     """Translate a tiny Ruby-like syntax subset into valid Python code.
 
     This helper allows ``run_python`` to accept blocks written using Ruby's
-    ``end`` keyword and missing colons after ``if``/``while`` statements.  The
-    transformation is intentionally minimal and does not aim to be a full
+    ``end`` keyword and missing colons after ``if``/``while``/``def`` statements.
+    The transformation is intentionally minimal and does not aim to be a full
     Ruby-to-Python converter.
     """
 
@@ -100,7 +100,7 @@ def _ruby_to_python(code: str) -> str:
         if stripped == "end":
             continue
         first_word = stripped.split(" ", 1)[0] if stripped else ""
-        if first_word in {"if", "while", "elif", "else"} and not stripped.endswith(":"):
+        if first_word in {"if", "while", "elif", "else", "def"} and not stripped.endswith(":"):
             line = line.rstrip() + ":"
         lines.append(line)
     return "\n".join(lines)
@@ -110,9 +110,10 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
     """Execute *code* using the restricted Apophis Python subset.
 
     This subset supports variable assignments, ``print`` calls, arithmetic
-    expressions, ``if`` statements and ``while`` loops.  A minimal Ruby-like
-    syntax is also recognised: ``if``/``while`` blocks may omit the trailing
-    colon and be terminated with ``end``.  Only a curated selection of Python's
+    expressions, ``if`` statements, ``while`` loops and ``def`` function
+    declarations.  A minimal Ruby-like syntax is also recognised:
+    ``if``/``while``/``def`` blocks may omit the trailing colon and be
+    terminated with ``end``.  Only a curated selection of Python's
     AST nodes is permitted to keep the interpreter intentionally small and safe.
 
     Parameters
@@ -133,6 +134,10 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
         ast.Assign,
         ast.Expr,
         ast.Call,
+        ast.FunctionDef,
+        ast.arguments,
+        ast.arg,
+        ast.Return,
         ast.Name,
         ast.Load,
         ast.Store,

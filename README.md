@@ -38,14 +38,21 @@ An interpreter for a safe subset of Python is available via
 `run_python(code)`.  It allows variable assignments, arithmetic expressions,
 basic control flow (``if`` statements and ``while`` loops) and ``print`` calls
 (``puts`` is provided as an alias).  A tiny Ruby-like syntax is also accepted:
-``if``/``while`` blocks may omit trailing colons and be terminated with
-``end``.  The output of the program is returned as a string:
+``if``/``while``/``def`` blocks may omit trailing colons and be terminated
+with ``end``.  The output of the program is returned as a string:
 
 ```python
 import apophis
 
 result = apophis.run_python("x = 2\nprint(x + 1)")
 assert result == "3\n"
+```
+
+Ruby-style function definitions are also understood:
+
+```python
+code = "def add(a, b)\n  return a + b\nend\nputs(add(1, 2))"
+assert apophis.run_python(code) == "3\n"
 ```
 
 Ruby code can be executed with :func:`run_ruby`, which invokes the system Ruby

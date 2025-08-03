@@ -58,6 +58,11 @@ def test_run_python_while_loop():
     assert apophis.run_python(code) == "0\n1\n2\n"
 
 
+def test_run_python_ruby_style_function():
+    code = "def add(a, b)\n    return a + b\nend\nputs(add(1, 2))"
+    assert apophis.run_python(code) == "3\n"
+
+
 def test_run_apophis_mixed_string():
     code = ":print('A', end='')\n>b\n:print('B', end='')"
     assert apophis.run_apophis(code) == "AsB"
