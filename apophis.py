@@ -120,7 +120,8 @@ def run_apophis(code: str, py_env: dict[str, object] | None = None) -> str:
     Parameters
     ----------
     code:
-        Hybrid Apophis source combining Python and Malbolge lines.
+        Hybrid Apophis source combining Python and Malbolge lines.  Blank lines
+        and those starting with ``#`` are treated as comments and ignored.
     py_env:
         Optional environment dictionary shared by all Python segments.
     """
@@ -132,6 +133,9 @@ def run_apophis(code: str, py_env: dict[str, object] | None = None) -> str:
     current_type: str | None = None
     buffer: list[str] = []
     for raw_line in code.splitlines():
+        stripped = raw_line.lstrip()
+        if not stripped or stripped.startswith("#"):
+            continue
         if raw_line.startswith(":"):
             seg_type = "py"
             line = raw_line[1:]
