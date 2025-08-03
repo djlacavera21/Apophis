@@ -46,3 +46,26 @@ def test_run_apophis_mixed_file(tmp_path):
     file = tmp_path / "hybrid.apop"
     file.write_text(":print('hi', end='')\n>b\n")
     assert apophis.run_file(file) == "his"
+
+
+def test_run_apophis_persistent_env():
+    code = ":x = 1\n>b\n:print(x, end='')"
+    assert apophis.run_apophis(code) == "s1"
+
+
+def test_repl_persistence():
+    inputs = iter([":x = 2", ":print(x)", ""])
+
+    def fake_input(prompt=""):
+        try:
+            return next(inputs)
+        except StopIteration:
+            raise EOFError
+
+    outputs: list[str] = []
+
+    def fake_output(s: str, end: str = "\n") -> None:
+        outputs.append(s + end)
+
+    apophis.repl(input_func=fake_input, output_func=fake_output)
+    assert "".join(outputs) == "2\n"

@@ -28,18 +28,23 @@ def run_malbolge(code: str) -> str:
     return malbolge.eval(code)
 
 
-def run_file(path: Path | str = "malbolge.apop") -> str:
+def run_file(
+    path: Path | str = "malbolge.apop", py_env: dict[str, object] | None = None
+) -> str:
     """Execute an Apophis program stored in *path*.
 
-    Apophis source files must end in ``.apop`` or ``.apo``.  By default, the
-    file ``malbolge.apop`` in the current working directory is loaded and
-    executed.  The output of the program is returned as a string.
+    Parameters
+    ----------
+    path:
+        Location of the source file.
+    py_env:
+        Optional dictionary used to persist state between Python segments.
     """
     file_path = Path(path)
     if file_path.suffix not in {".apop", ".apo"}:
         raise ValueError("Apophis files must use the .apop or .apo extension")
     code = file_path.read_text(encoding="utf-8")
-    return run_apophis(code)
+    return run_apophis(code, py_env=py_env)
 
 
 # Backwards compatibility for earlier versions
@@ -63,8 +68,16 @@ def malbolge_encode(text: str) -> str:
     return "".join(encoded_chars)
 
 
-def run_python(code: str) -> str:
-    """Execute *code* using the restricted Apophis Python subset."""
+def run_python(code: str, env: dict[str, object] | None = None) -> str:
+    """Execute *code* using the restricted Apophis Python subset.
+
+    Parameters
+    ----------
+    code:
+        Python source code to execute.
+    env:
+        Optional dictionary that stores variables between calls.
+    """
 
     if not isinstance(code, str):
         raise TypeError("code must be a string")
@@ -92,7 +105,8 @@ def run_python(code: str) -> str:
         if not isinstance(node, allowed_nodes):
             raise ValueError(f"Unsupported syntax: {type(node).__name__}")
 
-    env: dict[str, object] = {}
+    if env is None:
+        env = {}
     buf = io.StringIO()
     globals_dict = {"__builtins__": {"print": print}}
     with contextlib.redirect_stdout(buf):
@@ -100,13 +114,15 @@ def run_python(code: str) -> str:
     return buf.getvalue()
 
 
-def run_apophis(code: str) -> str:
+def run_apophis(code: str, py_env: dict[str, object] | None = None) -> str:
     """Execute mixed Apophis *code* containing Python and Malbolge segments.
 
-    Lines starting with ``:`` are treated as Python and evaluated using
-    :func:`run_python`.  Other lines are considered Malbolge and executed via
-    :func:`run_malbolge`.  Output from both languages is concatenated and
-    returned as a single string.
+    Parameters
+    ----------
+    code:
+        Hybrid Apophis source combining Python and Malbolge lines.
+    py_env:
+        Optional environment dictionary shared by all Python segments.
     """
 
     if not isinstance(code, str):
@@ -132,15 +148,40 @@ def run_apophis(code: str) -> str:
     if buffer:
         segments.append((current_type, "\n".join(buffer)))
 
+    if py_env is None:
+        py_env = {}
+
     outputs: list[str] = []
     for seg_type, seg_code in segments:
         if not seg_code.strip():
             continue
         if seg_type == "py":
-            outputs.append(run_python(seg_code))
+            outputs.append(run_python(seg_code, env=py_env))
         else:
             outputs.append(run_malbolge(seg_code))
     return "".join(outputs)
+
+
+def repl(input_func=input, output_func=print) -> None:
+    """Start an interactive Apophis session.
+
+    Lines are read from ``input_func`` and executed immediately.  Python lines
+    must begin with ``:`` while all other lines are treated as Malbolge.  State
+    from Python code persists across inputs via a shared environment.  The
+    ``output_func`` is used for displaying results and defaults to :func:`print`.
+    """
+
+    env: dict[str, object] = {}
+    while True:
+        try:
+            line = input_func(">>> ")
+        except EOFError:
+            break
+        if line == "":
+            break
+        result = run_apophis(line, py_env=env)
+        if result:
+            output_func(result, end="")
 
 
 def main() -> None:
@@ -154,7 +195,16 @@ def main() -> None:
         default="malbolge.apop",
         help="Path to a .apop/.apo source file",
     )
+    parser.add_argument(
+        "-i",
+        "--interactive",
+        action="store_true",
+        help="Start an interactive REPL instead of running a file",
+    )
     args = parser.parse_args()
+    if args.interactive:
+        repl()
+        return
     output = run_file(args.path)
     if output:
         print(output)
