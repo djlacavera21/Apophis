@@ -1,8 +1,9 @@
-"""Apophis language utilities combining Python and Malbolge.
+"""Apophis language utilities combining Python, Ruby and Malbolge.
 
-This module provides helper functions to execute Malbolge code and to
+This module provides helper functions to execute Malbolge and Ruby code and to
 apply Malbolge's instruction encryption algorithm.  It relies on the
-`malbolge` Python package for the underlying interpreter.
+`malbolge` Python package for the Malbolge interpreter and the system `ruby`
+command for Ruby execution.
 """
 from __future__ import annotations
 
@@ -11,6 +12,7 @@ from pathlib import Path
 import ast
 import contextlib
 import io
+import subprocess
 
 import malbolge
 
@@ -32,6 +34,8 @@ def run_file(
     path: Path | str = "malbolge.apop", py_env: dict[str, object] | None = None
 ) -> str:
     """Execute an Apophis program stored in *path*.
+
+    The source may contain Python, Ruby and Malbolge segments.
 
     Parameters
     ----------
@@ -66,6 +70,19 @@ def malbolge_encode(text: str) -> str:
         else:
             encoded_chars.append(ch)
     return "".join(encoded_chars)
+
+
+def run_ruby(code: str) -> str:
+    """Execute *code* written in Ruby and return its output."""
+    if not isinstance(code, str):
+        raise TypeError("code must be a string")
+    proc = subprocess.run(
+        ["ruby", "-e", code],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return proc.stdout
 
 
 def run_python(code: str, env: dict[str, object] | None = None) -> str:
@@ -131,20 +148,21 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
     if env is None:
         env = {}
     buf = io.StringIO()
-    globals_dict = {"__builtins__": {"print": print}}
+    globals_dict = {"__builtins__": {"print": print, "puts": print}}
     with contextlib.redirect_stdout(buf):
         exec(compile(tree, "<apophis>", "exec"), globals_dict, env)
     return buf.getvalue()
 
 
 def run_apophis(code: str, py_env: dict[str, object] | None = None) -> str:
-    """Execute mixed Apophis *code* containing Python and Malbolge segments.
+    """Execute mixed Apophis *code* containing Python, Ruby and Malbolge segments.
 
     Parameters
     ----------
     code:
-        Hybrid Apophis source combining Python and Malbolge lines.  Blank lines
-        and those starting with ``#`` are treated as comments and ignored.
+        Hybrid Apophis source combining Python (prefixed with ``:``), Ruby
+        (prefixed with ``;``) and Malbolge lines.  Blank lines and those
+        starting with ``#`` are treated as comments and ignored.
     py_env:
         Optional environment dictionary shared by all Python segments.
     """
@@ -161,6 +179,9 @@ def run_apophis(code: str, py_env: dict[str, object] | None = None) -> str:
             continue
         if raw_line.startswith(":"):
             seg_type = "py"
+            line = raw_line[1:]
+        elif raw_line.startswith(";"):
+            seg_type = "rb"
             line = raw_line[1:]
         else:
             seg_type = "mb"
@@ -184,6 +205,8 @@ def run_apophis(code: str, py_env: dict[str, object] | None = None) -> str:
             continue
         if seg_type == "py":
             outputs.append(run_python(seg_code, env=py_env))
+        elif seg_type == "rb":
+            outputs.append(run_ruby(seg_code))
         else:
             outputs.append(run_malbolge(seg_code))
     return "".join(outputs)
@@ -193,9 +216,10 @@ def repl(input_func=input, output_func=print) -> None:
     """Start an interactive Apophis session.
 
     Lines are read from ``input_func`` and executed immediately.  Python lines
-    must begin with ``:`` while all other lines are treated as Malbolge.  State
-    from Python code persists across inputs via a shared environment.  The
-    ``output_func`` is used for displaying results and defaults to :func:`print`.
+    must begin with ``:``, Ruby lines with ``;`` while all other lines are
+    treated as Malbolge.  State from Python code persists across inputs via a
+    shared environment.  The ``output_func`` is used for displaying results and
+    defaults to :func:`print`.
     """
 
     env: dict[str, object] = {}

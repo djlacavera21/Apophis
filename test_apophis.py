@@ -32,6 +32,10 @@ def test_run_python_basic():
     assert apophis.run_python(code) == "3\n"
 
 
+def test_run_python_puts_alias():
+    assert apophis.run_python("puts('hello')") == "hello\n"
+
+
 def test_run_python_rejects_import():
     with pytest.raises(ValueError):
         apophis.run_python("import os")
@@ -52,6 +56,15 @@ def test_run_python_while_loop():
 def test_run_apophis_mixed_string():
     code = ":print('A', end='')\n>b\n:print('B', end='')"
     assert apophis.run_apophis(code) == "AsB"
+
+
+def test_run_ruby_basic():
+    assert apophis.run_ruby("print 'hi'") == "hi"
+
+
+def test_run_apophis_with_ruby():
+    code = ":print('A', end='')\n;print 'B'\n:print('C', end='')"
+    assert apophis.run_apophis(code) == "ABC"
 
 
 def test_run_apophis_mixed_file(tmp_path):
