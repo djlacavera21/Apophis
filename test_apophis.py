@@ -104,3 +104,13 @@ def test_repl_persistence():
 
     apophis.repl(input_func=fake_input, output_func=fake_output)
     assert "".join(outputs) == "2\n"
+
+
+def test_run_python_ruby_style_function():
+    code = "def add(x, y)\n    return x + y\nend\nprint(add(2, 3))"
+    assert apophis.run_python(code) == "5\n"
+
+
+def test_run_apophis_cross_language_env():
+    code = ":x = 5\n;puts x\n;y = x + 1\n:print(y)"
+    assert apophis.run_apophis(code) == "5\n6\n"

@@ -12,8 +12,9 @@ output.
 The language also supports **hybrid programs** that mix Python, Ruby and Malbolge.  In
 these sources, lines beginning with ``:`` are interpreted as Python, lines beginning with ``;``
 are executed as Ruby while all other lines run as Malbolge.  The outputs from all languages are
-concatenated.  Use :func:`apophis.run_apophis` to execute code stored in a
-string and :func:`apophis.run_file` for ``.apop``/``.apo`` files.
+concatenated and variables defined in Python or Ruby segments persist across subsequent
+segments.  Use :func:`apophis.run_apophis` to execute code stored in a string and
+:func:`apophis.run_file` for ``.apop``/``.apo`` files.
 
 Example hybrid program executed from a string:
 
@@ -36,10 +37,10 @@ string into Malbolge code using the language's encryption algorithm.
 
 An interpreter for a safe subset of Python is available via
 `run_python(code)`.  It allows variable assignments, arithmetic expressions,
-basic control flow (``if`` statements and ``while`` loops) and ``print`` calls
-(``puts`` is provided as an alias).  A tiny Ruby-like syntax is also accepted:
-``if``/``while`` blocks may omit trailing colons and be terminated with
-``end``.  The output of the program is returned as a string:
+basic control flow (``if`` statements, ``while`` loops and ``def`` blocks) and
+``print`` calls (``puts`` is provided as an alias).  A tiny Ruby-like syntax is
+also accepted: ``if``/``while``/``def`` blocks may omit trailing colons and be
+terminated with ``end``.  The output of the program is returned as a string:
 
 ```python
 import apophis
@@ -49,7 +50,8 @@ assert result == "3\n"
 ```
 
 Ruby code can be executed with :func:`run_ruby`, which invokes the system Ruby
-interpreter and returns its stdout:
+interpreter and returns its stdout.  A mapping can be provided to share
+variables with Python code:
 
 ```python
 import apophis
