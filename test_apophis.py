@@ -53,6 +53,11 @@ def test_run_apophis_persistent_env():
     assert apophis.run_apophis(code) == "s1"
 
 
+def test_run_apophis_comments():
+    code = "# comment\n:print('X', end='')\n# another\nQ"
+    assert apophis.run_apophis(code) == "X"
+
+
 def test_repl_persistence():
     inputs = iter([":x = 2", ":print(x)", ""])
 

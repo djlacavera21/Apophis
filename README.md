@@ -27,6 +27,10 @@ print(apophis.run_apophis(code))  # -> AsB\n
 Hybrid sources can also be saved to ``.apop`` files and run with
 ``apophis.run_file('program.apop')``.
 
+Lines beginning with ``#`` are treated as comments and ignored by the
+interpreter, allowing Apophis programs to be documented without affecting
+execution.
+
 Apophis also includes a `malbolge_encode(string)` function that encodes a given
 string into Malbolge code using the language's encryption algorithm.
 
