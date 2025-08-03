@@ -85,13 +85,35 @@ def run_ruby(code: str) -> str:
     return proc.stdout
 
 
+def _ruby_to_python(code: str) -> str:
+    """Translate a tiny Ruby-like syntax subset into valid Python code.
+
+    This helper allows ``run_python`` to accept blocks written using Ruby's
+    ``end`` keyword and missing colons after ``if``/``while`` statements.  The
+    transformation is intentionally minimal and does not aim to be a full
+    Ruby-to-Python converter.
+    """
+
+    lines: list[str] = []
+    for line in code.splitlines():
+        stripped = line.strip()
+        if stripped == "end":
+            continue
+        first_word = stripped.split(" ", 1)[0] if stripped else ""
+        if first_word in {"if", "while", "elif", "else"} and not stripped.endswith(":"):
+            line = line.rstrip() + ":"
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def run_python(code: str, env: dict[str, object] | None = None) -> str:
     """Execute *code* using the restricted Apophis Python subset.
 
     This subset supports variable assignments, ``print`` calls, arithmetic
-    expressions, ``if`` statements and ``while`` loops.  Only a curated
-    selection of Python's AST nodes is permitted to keep the interpreter
-    intentionally small and safe.
+    expressions, ``if`` statements and ``while`` loops.  A minimal Ruby-like
+    syntax is also recognised: ``if``/``while`` blocks may omit the trailing
+    colon and be terminated with ``end``.  Only a curated selection of Python's
+    AST nodes is permitted to keep the interpreter intentionally small and safe.
 
     Parameters
     ----------
@@ -104,6 +126,7 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
     if not isinstance(code, str):
         raise TypeError("code must be a string")
 
+    code = _ruby_to_python(code)
     tree = ast.parse(code, mode="exec")
     allowed_nodes = (
         ast.Module,

@@ -37,8 +37,9 @@ string into Malbolge code using the language's encryption algorithm.
 An interpreter for a safe subset of Python is available via
 `run_python(code)`.  It allows variable assignments, arithmetic expressions,
 basic control flow (``if`` statements and ``while`` loops) and ``print`` calls
-(``puts`` is provided as an alias).  The output of the program is returned as a
-string:
+(``puts`` is provided as an alias).  A tiny Ruby-like syntax is also accepted:
+``if``/``while`` blocks may omit trailing colons and be terminated with
+``end``.  The output of the program is returned as a string:
 
 ```python
 import apophis
