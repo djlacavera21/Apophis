@@ -37,11 +37,14 @@ string into Malbolge code using the language's encryption algorithm.
 
 An interpreter for a safe subset of Python is available via
 `run_python(code)`.  It allows variable assignments, arithmetic expressions,
-basic control flow (``if`` statements, ``while`` loops and ``def`` blocks) and
+basic control flow (``if``/``while``/``for`` loops and ``def`` blocks) and
 ``print`` calls (``puts`` is provided as an alias).  A tiny Ruby-like syntax is
-also accepted: ``if``/``while``/``def`` blocks may omit trailing colons and be
-terminated with ``end``; ``elsif``, ``unless`` and ``until`` are also
-understood.  The output of the program is returned as a string:
+also accepted: ``if``/``while``/``for``/``def`` blocks may omit trailing colons,
+optionally include ``do`` or ``then`` and be terminated with ``end``;
+``elsif``, ``unless``, ``until`` and ``next`` are also understood.  Ruby code can
+be executed inline from Python using a ``ruby()`` helper which shares
+variables between languages.  The output of the program is returned as a
+string:
 
 ```python
 import apophis

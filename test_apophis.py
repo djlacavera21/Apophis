@@ -137,6 +137,31 @@ def test_run_python_ruby_style_unless_until():
     assert apophis.run_python(code_until) == "0\n1\n"
 
 
+def test_run_python_ruby_style_for_and_next():
+    code = (
+        "for i in range(3) do\n"
+        "    if i == 1\n"
+        "        next\n"
+        "    end\n"
+        "    puts(i)\n"
+        "end"
+    )
+    assert apophis.run_python(code) == "0\n2\n"
+
+
+def test_run_python_inline_ruby():
+    code = (
+        "x = 1\n"
+        "ruby(\"x = x + 1\")\n"
+        "print(x)\n"
+    )
+    assert apophis.run_python(code) == "2\n"
+
+
+def test_run_python_ruby_output():
+    assert apophis.run_python("ruby(\"puts 'hi'\")") == "hi\n"
+
+
 def test_run_apophis_cross_language_env():
     code = ":x = 5\n;puts x\n;y = x + 1\n:print(y)"
     assert apophis.run_apophis(code) == "5\n6\n"

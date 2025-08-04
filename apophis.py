@@ -126,6 +126,9 @@ def _ruby_to_python(code: str) -> str:
         stripped = line.strip()
         if stripped == "end":
             continue
+        if stripped == "next":
+            lines.append(line.replace("next", "continue", 1))
+            continue
         first_word = stripped.split(" ", 1)[0] if stripped else ""
         if first_word == "elsif":
             line = line.replace("elsif", "elif", 1)
@@ -137,8 +140,15 @@ def _ruby_to_python(code: str) -> str:
             line = line.replace("until", "while not", 1)
             first_word = "while"
         stripped = line.strip()
-        if first_word in {"if", "while", "elif", "else", "def"} and not stripped.endswith(":"):
-            line = line.rstrip() + ":"
+        if first_word in {"if", "while", "elif", "else", "def", "for"}:
+            if stripped.endswith(" do"):
+                line = line[: line.rfind(" do")]
+                stripped = line.strip()
+            if stripped.endswith(" then"):
+                line = line[: line.rfind(" then")]
+                stripped = line.strip()
+            if not stripped.endswith(":"):
+                line = line.rstrip() + ":"
         lines.append(line)
     return "\n".join(lines)
 
@@ -147,12 +157,13 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
     """Execute *code* using the restricted Apophis Python subset.
 
     This subset supports variable assignments, ``print`` calls, arithmetic
-    expressions, ``if`` statements, ``while`` loops and function definitions.  A
-    minimal Ruby-like syntax is also recognised: ``if``/``while``/``def`` blocks
-    may omit the trailing colon and be terminated with ``end``; ``elsif``,
-    ``unless`` and ``until`` are accepted as aliases for ``elif``, ``if not`` and
-    ``while not`` respectively.  Only a curated selection of Python's AST nodes
-    is permitted to keep the interpreter intentionally small and safe.
+    expressions, ``if``/``while``/``for`` loops and function definitions.  A
+    minimal Ruby-like syntax is also recognised: ``if``/``while``/``for``/``def``
+    blocks may omit the trailing colon, optionally use ``do``/``then`` and be
+    terminated with ``end``; ``elsif``, ``unless``, ``until`` and ``next`` are
+    accepted as aliases for ``elif``, ``if not``, ``while not`` and ``continue``.
+    Only a curated selection of Python's AST nodes is permitted to keep the
+    interpreter intentionally small and safe.
 
     Parameters
     ----------
@@ -186,6 +197,9 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
         ast.Mod,
         ast.If,
         ast.While,
+        ast.For,
+        ast.List,
+        ast.Tuple,
         ast.FunctionDef,
         ast.arguments,
         ast.arg,
@@ -215,7 +229,12 @@ def run_python(code: str, env: dict[str, object] | None = None) -> str:
     if env is None:
         env = {}
     buf = io.StringIO()
-    globals_dict = {"__builtins__": {"print": print, "puts": print}}
+    def ruby(code_str: str) -> None:
+        output = run_ruby(code_str, env=env)
+        if output:
+            print(output, end="")
+
+    globals_dict = {"__builtins__": {"print": print, "puts": print, "range": range, "ruby": ruby}}
     with contextlib.redirect_stdout(buf):
         exec(compile(tree, "<apophis>", "exec"), globals_dict, env)
     return buf.getvalue()
