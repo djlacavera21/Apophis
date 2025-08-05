@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import contextlib
+import threading
 from tkinter import (
     Tk,
     Text,
@@ -144,14 +145,19 @@ class ApophisIDE:
 
     # Execution --------------------------------------------------------
     def run_code(self) -> None:
+        """Run the buffer contents without blocking the UI."""
         code = self.text.get("1.0", END)
-        try:
-            output = apophis.run_apophis(code)
-            if output and not output.endswith("\n"):
-                output += "\n"
-            self._write_output(output)
-        except Exception as exc:  # pragma: no cover - GUI only
-            self._write_output(f"Error: {exc}\n")
+
+        def worker() -> None:
+            try:
+                output = apophis.run_apophis(code)
+                if output and not output.endswith("\n"):
+                    output += "\n"
+            except Exception as exc:  # pragma: no cover - GUI only
+                output = f"Error: {exc}\n"
+            self.root.after(0, lambda: self._write_output(output))
+
+        threading.Thread(target=worker, daemon=True).start()
 
     # Convenience ------------------------------------------------------
     def mainloop(self) -> None:
