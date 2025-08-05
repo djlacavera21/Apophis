@@ -15,6 +15,8 @@ def test_class_methods():
         'run_code',
         'undo',
         'redo',
+        'find_text',
+        'replace_text',
         'clear_output',
         'maybe_save',
         'on_close',
