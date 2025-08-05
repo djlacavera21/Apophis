@@ -137,3 +137,6 @@ build a `.deb` package containing the Apophis modules and desktop IDE.  Run:
 The resulting `apophis_<version>.deb` can then be installed with
 `dpkg -i`.
 
+After installation a desktop menu entry titled **Apophis** will be
+available for launching the IDE.
+

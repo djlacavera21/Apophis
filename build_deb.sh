@@ -15,7 +15,10 @@ PY
 WORKDIR=build/deb
 
 rm -rf "$WORKDIR" "${NAME}_${VERSION}.deb"
-mkdir -p "$WORKDIR/DEBIAN" "$WORKDIR/usr/lib/python3/dist-packages" "$WORKDIR/usr/bin"
+mkdir -p "$WORKDIR/DEBIAN" \
+         "$WORKDIR/usr/lib/python3/dist-packages" \
+         "$WORKDIR/usr/bin" \
+         "$WORKDIR/usr/share/applications"
 
 cat > "$WORKDIR/DEBIAN/control" <<CONTROL
 Package: $NAME
@@ -38,6 +41,18 @@ from apophis_ide import launch
 launch()
 LAUNCH
 chmod +x "$WORKDIR/usr/bin/apophis-ide"
+
+# Desktop entry for menu systems
+cat > "$WORKDIR/usr/share/applications/apophis.desktop" <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Apophis
+Comment=Apophis IDE
+Exec=apophis-ide
+Terminal=false
+Categories=Development;
+DESKTOP
+chmod 644 "$WORKDIR/usr/share/applications/apophis.desktop"
 
 dpkg-deb --build "$WORKDIR" "${NAME}_${VERSION}.deb"
 
