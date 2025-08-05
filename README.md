@@ -106,3 +106,13 @@ or from the command line:
 ```bash
 apophis -i
 ```
+
+A minimal Tkinter based desktop IDE is bundled with the project.  It can be
+started from Python and provides basic open/save/run capabilities for Apophis
+programs:
+
+```python
+import apophis_ide
+apophis_ide.launch()
+```
+

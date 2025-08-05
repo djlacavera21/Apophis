@@ -16,4 +16,4 @@ dependencies = ["malbolge"]
 apophis = "apophis:main"
 
 [tool.setuptools]
-py-modules = ["apophis"]
+py-modules = ["apophis", "apophis_ide"]
