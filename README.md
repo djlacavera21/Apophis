@@ -109,7 +109,9 @@ apophis -i
 
 A minimal Tkinter based desktop IDE is bundled with the project.  It can be
 started from Python and provides basic open/save/run capabilities for Apophis
-programs:
+programs.  Standard editing shortcuts (new, undo/redo, cut/copy/paste) and a
+status bar showing the cursor location make it a bit more pleasant for day to
+day use:
 
 ```python
 import apophis_ide
