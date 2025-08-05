@@ -18,6 +18,20 @@ import subprocess
 import malbolge
 
 
+# Explicit re-exports for the public API.  This helps tools and users relying
+# on introspection discover the main entry points of the library.
+__all__ = [
+    "run_malbolge",
+    "run_file",
+    "malbolge_encode",
+    "run_ruby",
+    "run_python",
+    "run_apophis",
+    "repl",
+    "main",
+]
+
+
 def run_malbolge(code: str) -> str:
     """Execute *code* written in Malbolge and return its output.
 
