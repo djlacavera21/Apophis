@@ -118,3 +118,22 @@ import apophis_ide
 apophis_ide.launch()
 ```
 
+The IDE can also be started from the command line once the package is
+installed:
+
+```bash
+apophis-ide
+```
+
+### Debian package
+
+For systems based on Debian or Ubuntu, a convenience script is provided to
+build a `.deb` package containing the Apophis modules and desktop IDE.  Run:
+
+```bash
+./build_deb.sh
+```
+
+The resulting `apophis_<version>.deb` can then be installed with
+`dpkg -i`.
+
