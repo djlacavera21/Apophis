@@ -27,6 +27,7 @@ from tkinter import (
     filedialog,
     messagebox,
 )
+from tkinter.scrolledtext import ScrolledText
 
 import apophis
 
@@ -36,15 +37,23 @@ class ApophisIDE:
 
     def __init__(self) -> None:
         self.root = Tk()
-        self.root.title("Apophis IDE")
-        self.text = Text(self.root, wrap="none", undo=True)
-        self.text.pack(fill="both", expand=True)
-        self.status = Label(self.root, anchor="w")
-        self.status.pack(fill="x", side="bottom")
         self.file_path: Path | None = None
+        self.modified = False
+        self.text = Text(self.root, wrap="none", undo=True)
+        self.output = ScrolledText(self.root, wrap="word", height=8, state="disabled")
+        self.status = Label(self.root, anchor="w")
+
+        self.status.pack(fill="x", side="bottom")
+        self.output.pack(fill="x", side="bottom")
+        self.text.pack(fill="both", expand=True)
+
+        self.update_title()
         self._create_menu()
         self._bind_events()
         self.update_status_bar()
+        self.text.edit_modified(False)
+        self.text.bind("<<Modified>>", self._on_modified)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     # GUI setup ---------------------------------------------------------
     def _create_menu(self) -> None:
@@ -55,7 +64,7 @@ class ApophisIDE:
         file_menu.add_command(label="Save", command=self.save_file)
         file_menu.add_command(label="Save As", command=self.save_file_as)
         file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self.root.quit)
+        file_menu.add_command(label="Exit", command=self.on_close)
         menu_bar.add_cascade(label="File", menu=file_menu)
 
         edit_menu = Menu(menu_bar, tearoff=0)
@@ -79,6 +88,7 @@ class ApophisIDE:
 
         run_menu = Menu(menu_bar, tearoff=0)
         run_menu.add_command(label="Run", command=self.run_code)
+        run_menu.add_command(label="Clear Output", command=self.clear_output)
         menu_bar.add_cascade(label="Run", menu=run_menu)
 
         self.root.config(menu=menu_bar)
@@ -86,11 +96,18 @@ class ApophisIDE:
     # File operations ---------------------------------------------------
     def new_file(self) -> None:
         """Clear the editor and reset the current file."""
+        if not self.maybe_save():
+            return
         self.text.delete("1.0", END)
         self.file_path = None
+        self.modified = False
+        self.update_title()
+        self.text.edit_modified(False)
         self.update_status_bar()
 
     def open_file(self) -> None:
+        if not self.maybe_save():
+            return
         path = filedialog.askopenfilename(
             filetypes=[("Apophis files", "*.apop *.apo"), ("All files", "*.*")]
         )
@@ -98,6 +115,9 @@ class ApophisIDE:
             self.file_path = Path(path)
             self.text.delete("1.0", END)
             self.text.insert(END, self.file_path.read_text(encoding="utf-8"))
+            self.modified = False
+            self.update_title()
+            self.text.edit_modified(False)
             self.update_status_bar()
 
     def save_file(self) -> None:
@@ -105,6 +125,9 @@ class ApophisIDE:
             self.save_file_as()
             return
         self.file_path.write_text(self.text.get("1.0", END), encoding="utf-8")
+        self.modified = False
+        self.text.edit_modified(False)
+        self.update_title()
 
     def save_file_as(self) -> None:
         path = filedialog.asksaveasfilename(
@@ -120,9 +143,11 @@ class ApophisIDE:
         code = self.text.get("1.0", END)
         try:
             output = apophis.run_apophis(code)
-            messagebox.showinfo("Output", output)
+            if output and not output.endswith("\n"):
+                output += "\n"
+            self._write_output(output)
         except Exception as exc:  # pragma: no cover - GUI only
-            messagebox.showerror("Error", str(exc))
+            self._write_output(f"Error: {exc}\n")
 
     # Convenience ------------------------------------------------------
     def mainloop(self) -> None:
@@ -153,6 +178,45 @@ class ApophisIDE:
         self.root.bind("<Control-s>", lambda _e: self.save_file())
         self.root.bind("<Control-Shift-S>", lambda _e: self.save_file_as())
         self.root.bind("<Control-r>", lambda _e: self.run_code())
+        self.root.bind("<Control-l>", lambda _e: self.clear_output())
+
+    def _write_output(self, text: str) -> None:
+        self.output.configure(state="normal")
+        self.output.insert(END, text)
+        self.output.see(END)
+        self.output.configure(state="disabled")
+
+    def clear_output(self) -> None:
+        """Clear the output console."""
+        self.output.configure(state="normal")
+        self.output.delete("1.0", END)
+        self.output.configure(state="disabled")
+
+    def maybe_save(self) -> bool:
+        """Prompt to save changes if the buffer has been modified."""
+        if not self.modified:
+            return True
+        result = messagebox.askyesnocancel("Unsaved changes", "Save changes?")
+        if result is None:
+            return False
+        if result:
+            self.save_file()
+        return True
+
+    def on_close(self) -> None:
+        """Handle window close events."""
+        if self.maybe_save():
+            self.root.destroy()
+
+    def _on_modified(self, _event: object | None = None) -> None:
+        self.modified = True
+        self.update_title()
+
+    def update_title(self) -> None:
+        name = self.file_path.name if self.file_path else "Untitled"
+        if self.modified:
+            name += " *"
+        self.root.title(f"{name} - Apophis IDE")
 
 
 def launch() -> None:
