@@ -3,7 +3,7 @@ https://www.researchgate.net/publication/369734814_apophis_syntax
 #ApophisProgrammingLanguage 
 Future usage for the #ApophisMiningFacility and the #ApophisClassUNSCStarfleet #GottaCatchAnAsteroid #ApophisNewMoon #MoonGod #UNSC #starship #AsteroidMining 
 
-Apophis is an (In Development) programming language that combines the syntax of Python, Ruby and the esoteric programming language Malbolge. (#GitHub Coming Soon)
+Apophis is an (In Development) programming language that combines the syntax of Python, Ruby and the esoteric programming language Malbolge. (https://github.com/djlacavera21/Apophis)
 
 Apophis includes the ability to run Malbolge code using the `run_malbolge(code)`
 function. This takes a Malbolge program as a string argument and returns the
