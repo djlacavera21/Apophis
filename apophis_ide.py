@@ -3,7 +3,7 @@
 This module provides a lightweight Tkinter based editor to create and
 execute Apophis programs.  It allows opening and saving ``.apop`` files as
 well as running the contents of the editor using :func:`apophis.run_apophis`.
-Basic editing features such as undo/redo, cut/copy/paste and a status bar
+Basic editing features such as undo/redo, cut/copy/paste, find/replace and a status bar
 that tracks the cursor position are provided to make the environment more
 comfortable for day to day use.
 
@@ -26,6 +26,7 @@ from tkinter import (
     Label,
     filedialog,
     messagebox,
+    simpledialog,
 )
 from tkinter.scrolledtext import ScrolledText
 
@@ -84,6 +85,9 @@ class ApophisIDE:
             label="Select All",
             command=lambda: self.text.event_generate("<<SelectAll>>"),
         )
+        edit_menu.add_separator()
+        edit_menu.add_command(label="Find", command=self.find_text)
+        edit_menu.add_command(label="Replace", command=self.replace_text)
         menu_bar.add_cascade(label="Edit", menu=edit_menu)
 
         run_menu = Menu(menu_bar, tearoff=0)
@@ -165,6 +169,36 @@ class ApophisIDE:
         with contextlib.suppress(Exception):
             self.text.edit_redo()
 
+    def find_text(self) -> None:
+        """Prompt for text and select the first match in the editor."""
+        target = simpledialog.askstring("Find", "Find:")
+        if not target:
+            return
+        start = self.text.search(target, "1.0", END)
+        if start:
+            end = f"{start}+{len(target)}c"
+            self.text.tag_remove("sel", "1.0", END)
+            self.text.tag_add("sel", start, end)
+            self.text.mark_set(INSERT, end)
+            self.text.see(start)
+
+    def replace_text(self) -> None:
+        """Prompt for text and replacement and apply to the buffer."""
+        target = simpledialog.askstring("Replace", "Find:")
+        if target is None:
+            return
+        replacement = simpledialog.askstring("Replace", "Replace with:")
+        if replacement is None:
+            return
+        content = self.text.get("1.0", END)
+        new_content = content.replace(target, replacement)
+        if new_content != content:
+            self.text.delete("1.0", END)
+            self.text.insert("1.0", new_content)
+            self.modified = True
+            self.text.edit_modified(True)
+            self.update_status_bar()
+
     def update_status_bar(self, _event: object | None = None) -> None:
         """Update the status bar with the current cursor position."""
         line, col = self.text.index(INSERT).split(".")
@@ -179,6 +213,8 @@ class ApophisIDE:
         self.root.bind("<Control-Shift-S>", lambda _e: self.save_file_as())
         self.root.bind("<Control-r>", lambda _e: self.run_code())
         self.root.bind("<Control-l>", lambda _e: self.clear_output())
+        self.root.bind("<Control-f>", lambda _e: self.find_text())
+        self.root.bind("<Control-h>", lambda _e: self.replace_text())
 
     def _write_output(self, text: str) -> None:
         self.output.configure(state="normal")
