@@ -31,6 +31,9 @@ from tkinter import (
 )
 from tkinter.scrolledtext import ScrolledText
 
+RECENT_STORE = Path.home() / ".apophis_recent"
+RECENT_LIMIT = 10
+
 import apophis
 
 
@@ -44,6 +47,9 @@ class ApophisIDE:
         self.text = Text(self.root, wrap="none", undo=True)
         self.output = ScrolledText(self.root, wrap="word", height=8, state="disabled")
         self.status = Label(self.root, anchor="w")
+        self.recent_files: list[Path] = []
+
+        self._load_recent_files()
 
         self.status.pack(fill="x", side="bottom")
         self.output.pack(fill="x", side="bottom")
@@ -65,6 +71,8 @@ class ApophisIDE:
         file_menu.add_command(label="Open", command=self.open_file)
         file_menu.add_command(label="Save", command=self.save_file)
         file_menu.add_command(label="Save As", command=self.save_file_as)
+        self.recent_menu = Menu(file_menu, tearoff=0)
+        file_menu.add_cascade(label="Open Recent", menu=self.recent_menu)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.on_close)
         menu_bar.add_cascade(label="File", menu=file_menu)
@@ -97,6 +105,7 @@ class ApophisIDE:
         menu_bar.add_cascade(label="Run", menu=run_menu)
 
         self.root.config(menu=menu_bar)
+        self._update_recent_menu()
 
     # File operations ---------------------------------------------------
     def new_file(self) -> None:
@@ -124,6 +133,7 @@ class ApophisIDE:
             self.update_title()
             self.text.edit_modified(False)
             self.update_status_bar()
+            self._add_recent_file(self.file_path)
 
     def save_file(self) -> None:
         if self.file_path is None:
@@ -133,6 +143,7 @@ class ApophisIDE:
         self.modified = False
         self.text.edit_modified(False)
         self.update_title()
+        self._add_recent_file(self.file_path)
 
     def save_file_as(self) -> None:
         path = filedialog.asksaveasfilename(
@@ -142,6 +153,53 @@ class ApophisIDE:
         if path:
             self.file_path = Path(path)
             self.save_file()
+
+    def open_recent_file(self, path: Path | str) -> None:
+        """Open a file from the recent files list."""
+        if not self.maybe_save():
+            return
+        p = Path(path)
+        if p.exists():
+            self.file_path = p
+            self.text.delete("1.0", END)
+            self.text.insert(END, p.read_text(encoding="utf-8"))
+            self.modified = False
+            self.update_title()
+            self.text.edit_modified(False)
+            self.update_status_bar()
+            self._add_recent_file(p)
+
+    def _load_recent_files(self) -> None:
+        try:
+            lines = RECENT_STORE.read_text(encoding="utf-8").splitlines()
+            self.recent_files = [Path(p) for p in lines if Path(p).exists()]
+        except OSError:
+            self.recent_files = []
+
+    def _save_recent_files(self) -> None:
+        try:
+            RECENT_STORE.write_text(
+                "\n".join(str(p) for p in self.recent_files), encoding="utf-8"
+            )
+        except OSError:
+            pass
+
+    def _add_recent_file(self, path: Path) -> None:
+        try:
+            self.recent_files.remove(path)
+        except ValueError:
+            pass
+        self.recent_files.insert(0, path)
+        del self.recent_files[RECENT_LIMIT:]
+        self._save_recent_files()
+        self._update_recent_menu()
+
+    def _update_recent_menu(self) -> None:
+        self.recent_menu.delete(0, END)
+        for p in self.recent_files:
+            self.recent_menu.add_command(
+                label=str(p), command=lambda path=p: self.open_recent_file(path)
+            )
 
     # Execution --------------------------------------------------------
     def run_code(self) -> None:

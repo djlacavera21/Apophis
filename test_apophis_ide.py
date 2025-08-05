@@ -12,6 +12,7 @@ def test_class_methods():
         'open_file',
         'save_file',
         'save_file_as',
+        'open_recent_file',
         'run_code',
         'undo',
         'redo',
